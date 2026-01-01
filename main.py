@@ -5,6 +5,7 @@ import httpx
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+import random
 
 DEEPSEEK_API_URL = "https://api.deepseek.com/v1/chat/completions"
 
@@ -47,11 +48,6 @@ async def chat(req: ChatReq):
             break
 
     kb = (req.kb or "").strip()
-    
-    RESUME_URL = "https://ben-gzf.github.io/Benbot_webpage/resume.pdf"
-    q = (last_user or "").lower()
-    if any(k in q for k in ["resume", "cv", "curriculum vitae", "简历"]):
-        return {"answer": "Here is the resume."}
 
     system_prompt = """
 You are BenBot, the personal website assistant for Zhefan (Ben) Guo.
