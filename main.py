@@ -10,8 +10,6 @@ DEEPSEEK_API_URL = "https://api.deepseek.com/v1/chat/completions"
 
 app = FastAPI()
 
-# 你的 GitHub Pages 域名（按你 repo：BEN-GZF/Benbot_webpage）
-# Pages 一般是 https://ben-gzf.github.io
 ALLOWED_ORIGINS = [
     "https://ben-gzf.github.io",
     "http://localhost:3000",  
@@ -31,8 +29,7 @@ class Msg(BaseModel):
 
 class ChatReq(BaseModel):
     messages: List[Msg] = []
-    kb: Optional[str] = None  # 由前端传入（推荐）
-    # 如果你想把 systemPrompt/styleExamples 也从前端传，后面可以加字段
+    kb: Optional[str] = None 
 
 @app.get("/health")
 def health():
@@ -42,10 +39,7 @@ def health():
 async def chat(req: ChatReq):
     api_key = os.getenv("DEEPSEEK_API_KEY")
     if not api_key:
-        # 对齐你原来的报错风格
         return {"answer": "Server misconfigured: DEEPSEEK_API_KEY is missing on Render env vars."}
-
-    # 取最后一个 user 消息
     last_user = ""
     for m in reversed(req.messages):
         if m.role == "user":
@@ -53,6 +47,11 @@ async def chat(req: ChatReq):
             break
 
     kb = (req.kb or "").strip()
+    
+    RESUME_URL = "https://ben-gzf.github.io/Benbot_webpage/resume.pdf"
+    q = (last_user or "").lower()
+    if any(k in q for k in ["resume", "cv", "curriculum vitae", "简历"]):
+        return {"answer": "Here is the resume."}
 
     system_prompt = """
 You are BenBot, the personal website assistant for Zhefan (Ben) Guo.
@@ -63,6 +62,8 @@ Hard rules:
 - Do NOT invent names, labs, achievements, dates, or links.
 - If not in KB: say you don't have that information, and optionally suggest checking the resume.
 - Do NOT use Markdown links. If sharing a link, output the raw URL only.
+- Do NOT use any Markdown formatting (no **bold**, no backticks, no markdown bullets).
+- When sharing any link, output the raw URL only (no surrounding punctuation like ** or parentheses).
 
 Style:
 - Sound friendly and human, not like a template.
@@ -79,7 +80,7 @@ Language: English.
     style_examples = """
 Examples (style only):
 User: what's my email?
-Assistant: Sure — Ben’s email is zhefan.guo@uconn.edu.
+Assistant: Sure — Ben's email is zhefan.guo@uconn.edu.
 
 User: tell me who you are
 Assistant: I'm BenBot — a small assistant on Ben's website. I can help with Ben's background, projects, and links (based only on what's listed on the site).
